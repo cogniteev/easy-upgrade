@@ -19,3 +19,6 @@ simple-provider:
         -
           post-installer2:
             key7: value7
+
+# global option overridable in CLI
+cleanup-temp-dir: true

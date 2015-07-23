@@ -1,4 +1,10 @@
 import inspect
+import logging
+import operator
+
+from pkg_resources import parse_version
+
+from .toolbox import temp_dir
 
 
 class Action(dict):
@@ -88,9 +94,6 @@ class Action(dict):
     def __call__(self, config, release, provider, prev_result=None):
         raise NotImplementedError()
 
-    def cleanup(self):
-        pass
-
     @classmethod
     def register(cls, base_name, action_cls, name, providers):
         if name in cls.actions.get(base_name, {}):
@@ -108,15 +111,23 @@ class Action(dict):
 
 
 class Fetcher(Action):
-    pass
+    def candidate_version(self):
+        """returns the version the fetcher would like to install"""
+    def fetch(self, output_directory):
+        pass
 
 
 class Installer(Action):
-    pass
+    def installed_version(self):
+        raise NotImplementedError()
+
+    def install(self, fetched_items_path, version):
+        raise NotImplementedError
 
 
 class PostInstaller(Action):
-    pass
+    def execute(self, fetched_items_path, version):
+        raise NotImplementedError
 
 
 class Release(dict):
@@ -130,33 +141,36 @@ class Release(dict):
             'post-install', PostInstaller, unique=False
         )
 
-    def install(self, provider):
-        for action in self.actions:
-            assert len(action) == 1
-            name = action.keys()[0]
-            pipeline = action.values()[0]
-            self.install_step(name, pipeline, provider)
-
-    def install_step(self, name, pipeline, provider):
-        actions = [Action.get(p.keys()[0]) for p in pipeline]
-        configs = [p.values()[0] for p in pipeline]
-
-        def _execute(i):
-            if i == 0:
-                return self.execute_action(action[i], configs[i], provider)
-            else:
-                result = self.execute_action(action[i - 1], configs[i - 1])
-                return self.execute_action(
-                    action[i], configs[i], provider, result
+    def install(self):
+        version_str = self.installer.installed_version()
+        if version_str:
+            version = parse_version(version_str)
+        else:
+            version = None
+        candidate_str = self.fetcher.candidate_version()
+        candidate = parse_version(candidate_str)
+        if version:
+            if version == candidate:
+                logging.info(
+                    "installed version ({}) ".format(candidate_str) +
+                    "is equal to candidate version"
                 )
-        try:
-            return _execute(len(pipeline))
-        finally:
-            for action in reversed(actions):
-                action.cleanup()
-
-    def execute_action(self, action, config, provider, prev_result=None):
-        return action(config, self, provider, prev_result)
+                return False
+            elif version > candidate:
+                logging.info(
+                    "installer version ({}) ".format(version) +
+                    "is most recent than " +
+                    "candidate version ({})".format(candidate)
+                )
+                return False
+        top_config = self.provider.top_config
+        cleanup_temp_dir = top_config.get('cleanup-temp-dir', True)
+        with temp_dir(cleanup=cleanup_temp_dir) as d:
+            self.fetcher.fetch(d)
+            self.installer.install(d, candidate_str)
+            for post_installer in self.post_installers:
+                post_installer.execute(d, candidate_str)
+        return True
 
     def __extract_action(self, config_key, base_action_cls, unique=True):
         raw_configs = self.get(config_key)
@@ -209,9 +223,28 @@ class ReleaseProvider(dict):
         self.top_config = top_config
         super(ReleaseProvider, self).__init__(top_config.get(name))
         self.release_cls = release_cls
-        self.releases = []
+        self.releases = {}
         for name, raw_config in self.get('releases', {}).items():
-            self.releases.append(release_cls(self, name, raw_config))
+            self.releases[name] = release_cls(self, name, raw_config)
+
+    def install(self, *releases):
+        if not any(releases):
+            return reduce(
+                operator.__and__,
+                map(
+                    lambda r: r.install(),
+                    self.releases.values()
+                )
+            )
+        else:
+            return reduce(
+                operator.__and__,
+                map(
+                    lambda r: r.install(),
+                    [release for name, release in self.releases.items()
+                     if name in releases]
+                )
+            )
 
 
 class Config(object):
