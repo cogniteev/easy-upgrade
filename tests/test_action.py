@@ -1,6 +1,10 @@
 import unittest
 
-from easy_upgrade.api import Fetcher, Action
+from easy_upgrade.api import (
+    Action,
+    Fetcher,
+    Installer,
+)
 
 
 class TestDeclaration(unittest.TestCase):
@@ -47,6 +51,30 @@ class TestDeclaration(unittest.TestCase):
         self.assertEqual(
             cm.exception.message,
             "Action 'foo' is already registered"
+        )
+
+    def test_action_miss_base_class(self):
+        Action.clear()
+        with self.assertRaises(Exception) as cm:
+
+            class Fetch1(Action):
+                name = 'pouet'
+        self.assertEqual(
+            cm.exception.message,
+            "Action class must extend one of "
+            "those classes: Fetcher, Installer, PostInstaller"
+        )
+
+    def test_action_extends_several_bases(self):
+        Action.clear()
+        with self.assertRaises(Exception) as cm:
+
+            class Fetch(Fetcher, Installer):
+                name = 'foo'
+        self.assertEqual(
+            cm.exception.message,
+            "Action class must extend exactly one of those classes: "
+            "Fetcher, Installer, PostInstaller"
         )
 
 

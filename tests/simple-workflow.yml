@@ -1,0 +1,21 @@
+simple-provider:
+  key1: value1
+  releases:
+    cogniteev/docido:
+      key2: value2
+      fetch:
+        fetch1:
+          key3: value3
+      install:
+        install1:
+          key4: value4
+      post-install:
+        -
+          post-installer1:
+            key5: value5
+        -
+          post-installer1:
+            key6: value6
+        -
+          post-installer2:
+            key7: value7
