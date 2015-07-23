@@ -1,14 +1,14 @@
 import inspect
 
 
-class Action(object):
+class Action(dict):
     actions = {}
     bases = ['Fetcher', 'Installer', 'PostInstaller']
 
     def __init__(self, provider, release, config):
+        super(Action, self).__init__(config)
         self.provider = provider,
         self.release = release
-        self.config = config
 
     @classmethod
     def clear(cls):
@@ -67,11 +67,10 @@ class Action(object):
         return providers
 
     @classmethod
-    def get(cls, base, name, provider):
+    def get_action(cls, base, name, provider):
         if isinstance(provider, ReleaseProvider):
             provider = provider.name
         base = base.__name__ if inspect.isclass(base) else base
-        print cls.actions
         actions = cls.actions.get(base, {})
         providers, action = actions.get(name, (None, None))
         if action is None:
@@ -125,7 +124,6 @@ class Release(dict):
         super(Release, self).__init__(config)
         self.provider = provider
         self.name = name
-        self.config = config
         self.fetcher = self.__extract_action('fetch', Fetcher)
         self.installer = self.__extract_action('install', Installer)
         self.post_installers = self.__extract_action(
@@ -161,7 +159,7 @@ class Release(dict):
         return action(config, self, provider, prev_result)
 
     def __extract_action(self, config_key, base_action_cls, unique=True):
-        raw_configs = self.config.get(config_key)
+        raw_configs = self.get(config_key)
         if raw_configs is None:
             raise Exception(
                 "Expecting key '{}' in release configuration"
@@ -178,7 +176,6 @@ class Release(dict):
             raw_configs = [raw_configs]
 
         actions = []
-        print config_key
         for config in raw_configs:
             if not isinstance(config, dict):
                 raise Exception(
@@ -191,7 +188,7 @@ class Release(dict):
                     "expect a dictionary values of 1 element (name => config)"
                 )
             action_name, action_config = config.items()[0]
-            action_cls = Action.get(
+            action_cls = Action.get_action(
                 base_action_cls,
                 action_name,
                 self.provider
@@ -206,14 +203,14 @@ class Release(dict):
         return actions
 
 
-class ReleaseProvider(object):
+class ReleaseProvider(dict):
     def __init__(self, name, top_config, release_cls=Release):
         self.name = name
         self.top_config = top_config
-        self.config = top_config.get(name)
+        super(ReleaseProvider, self).__init__(top_config.get(name))
         self.release_cls = release_cls
         self.releases = []
-        for name, raw_config in self.config.get('releases', {}).items():
+        for name, raw_config in self.get('releases', {}).items():
             self.releases.append(release_cls(self, name, raw_config))
 
 
