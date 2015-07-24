@@ -26,8 +26,7 @@ def temp_dir(cleanup=True, **kwargs):
             shutil.rmtree(temp_dir)
 
 
-def find_executable(raise_if_missing=True, *names):
-    assert len(names) > 0
+def find_executable(*names, **kwargs):
     for name in names:
         if osp.isabs(name):
             return name
@@ -35,7 +34,7 @@ def find_executable(raise_if_missing=True, *names):
             f = osp.join(path, name)
             if osp.isfile(f) and os.access(f, os.X_OK):
                 return f
-    if raise_if_missing:
+    if kwargs.get('raise_if_missing', True):
         if len(names) > 1:
             raise Exception(
                 "Could not find these executables in PATH: " +
