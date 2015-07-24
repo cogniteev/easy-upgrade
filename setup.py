@@ -78,5 +78,9 @@ setup(
     classifiers=CLASSIFIERS,
     test_suite='nose.collector',
     setup_requires=['nose', 'rednose'],
+    install_requires=[
+        'PyYAML>=3.11',
+        'requests>=2.7.0',
+    ],
     **extra_opts
 )
