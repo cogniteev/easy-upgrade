@@ -1,0 +1,21 @@
+github:
+  releases:
+    docker/compose:
+      with-prerelease: false
+      fetch:
+        asset:
+          name: docker-compose-Darwin-x86_64
+          file: bin/docker-compose
+      install:
+        stow:
+          path: <%= temp_stow_dir %>
+          activate: false
+    docker/machine:
+      with-prerelease: true
+      fetch:
+        asset:
+          name: docker-machine_darwin-amd64
+          file: bin/docker-machine
+      install:
+        stow:
+          path: <%= temp_stow_dir %>

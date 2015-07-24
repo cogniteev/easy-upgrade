@@ -3,7 +3,7 @@ import shutil
 import unittest
 
 from easy_upgrade.api import (
-    Config,
+    EasyUpgrade,
     Fetcher,
     Installer,
     PostInstaller,
@@ -71,7 +71,7 @@ class TestSimpleWorflow(unittest.TestCase):
     YML_CONFIG_PATH = osp.join(osp.dirname(__file__), 'simple-workflow.yml')
 
     def test_load_config(self):
-        global_config = Config.from_yaml(self.YML_CONFIG_PATH)
+        global_config = EasyUpgrade.load_yaml(self.YML_CONFIG_PATH)
         provider = SimpleProvider(global_config)
         self.assertEqual(provider.key1, 'value1')
         self.assertEqual(provider.get('key1'), 'value1')
@@ -99,9 +99,12 @@ class TestSimpleWorflow(unittest.TestCase):
         self.assertEqual(pi3.get('key7'), 'value7')
 
     def test_installation(self):
-        global_config = Config.from_yaml(self.YML_CONFIG_PATH)
+        global_config = EasyUpgrade.load_yaml(self.YML_CONFIG_PATH)
         provider = SimpleProvider(global_config)
         release = provider.releases.values()[0]
         release.post_installers[2].ut = self
         self.assertTrue(provider.install('cogniteev/docido'))
         self.assertFalse(provider.install('cogniteev/docido'))
+
+if __name__ == '__main__':
+    unittest.main()

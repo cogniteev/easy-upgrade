@@ -1,6 +1,7 @@
 
 from contextlib import contextmanager
 import os
+import os.path as osp
 import shutil
 import tempfile
 
@@ -23,3 +24,24 @@ def temp_dir(cleanup=True, **kwargs):
     finally:
         if cleanup:
             shutil.rmtree(temp_dir)
+
+
+def find_executable(raise_if_missing=True, *names):
+    assert len(names) > 0
+    for name in names:
+        if osp.isabs(name):
+            return name
+        for path in os.environ['PATH'].split(os.pathsep):
+            f = osp.join(path, name)
+            if osp.isfile(f) and os.access(f, os.X_OK):
+                return f
+    if raise_if_missing:
+        if len(names) > 1:
+            raise Exception(
+                "Could not find these executables in PATH: " +
+                ", ".join(names)
+            )
+        else:
+            raise Exception(
+                "Could not find executable {} in PATH".format(*names)
+            )

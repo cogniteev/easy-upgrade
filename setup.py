@@ -82,5 +82,14 @@ setup(
         'PyYAML>=3.11',
         'requests>=2.7.0',
     ],
+    entry_points="""
+        [console_scripts]
+        easy_upgrade = easy_upgrade.cli:run
+        [easy_upgrade.actions]
+        github = easy_upgrade.lib.github
+        stow = easy_upgrade.lib.stow
+        [easy_upgrade.providers]
+        github = easy_upgrade.lib.github:GitHubProvider
+    """,
     **extra_opts
 )

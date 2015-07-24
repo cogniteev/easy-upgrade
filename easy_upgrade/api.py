@@ -2,9 +2,16 @@ import inspect
 import logging
 import operator
 
-from pkg_resources import parse_version
+import pkg_resources
 
 from .toolbox import temp_dir
+
+
+def parse_version(version):
+    if version is None:
+        return version
+    version = version.lstrip('v')
+    return pkg_resources.parse_version(version)
 
 
 class Action(dict):
@@ -13,12 +20,16 @@ class Action(dict):
 
     def __init__(self, provider, release, config):
         super(Action, self).__init__(config)
-        self.provider = provider,
+        self.provider = provider
         self.release = release
 
     @classmethod
     def clear(cls):
         cls.actions.clear()
+
+    def jinja_eval(self, text):
+        # FIXME
+        return text
 
     class __metaclass__(type):
         def __new__(mcs, name, bases, attrs):
@@ -138,8 +149,31 @@ class Release(dict):
         self.fetcher = self.__extract_action('fetch', Fetcher)
         self.installer = self.__extract_action('install', Installer)
         self.post_installers = self.__extract_action(
-            'post-install', PostInstaller, unique=False
+            'post-install', PostInstaller, unique=False, default=[]
         )
+        self.logger = logging.getLogger('{}:{}'.format(
+            self.provider.name,
+            self.name
+        ))
+
+    def pkg_name(self):
+        return self.name
+
+    def get_versions(self):
+        installed = self.installer.installed_version()
+        candidate = self.fetcher.candidate_version()
+        versions = dict()
+        if installed:
+            versions['installed'] = {
+                'human': installed,
+                'tuple': parse_version(installed),
+            }
+        if candidate:
+            versions['candidate'] = {
+                'human': candidate,
+                'tuple': parse_version(candidate),
+            }
+        return versions
 
     def install(self):
         version_str = self.installer.installed_version()
@@ -148,37 +182,48 @@ class Release(dict):
         else:
             version = None
         candidate_str = self.fetcher.candidate_version()
+        if candidate_str is None:
+            return False
         candidate = parse_version(candidate_str)
         if version:
             if version == candidate:
-                logging.info(
-                    "installed version ({}) ".format(candidate_str) +
-                    "is equal to candidate version"
+                self.logger.info(
+                    "candidate version ({}) ".format(candidate_str) +
+                    "is already installed. Nothing to do."
                 )
                 return False
             elif version > candidate:
-                logging.info(
+                self.logger.info(
                     "installer version ({}) ".format(version) +
                     "is most recent than " +
                     "candidate version ({})".format(candidate)
                 )
                 return False
+        self.logger.info("starting installation of version {}".format(
+            candidate_str
+        ))
         top_config = self.provider.top_config
         cleanup_temp_dir = top_config.get('cleanup-temp-dir', True)
         with temp_dir(cleanup=cleanup_temp_dir) as d:
+            self.logger.info("fetching release")
             self.fetcher.fetch(d)
+            self.logger.info("installing release")
             self.installer.install(d, candidate_str)
             for post_installer in self.post_installers:
                 post_installer.execute(d, candidate_str)
         return True
 
-    def __extract_action(self, config_key, base_action_cls, unique=True):
+    def __extract_action(self, config_key, base_action_cls,
+                         unique=True, default=None):
         raw_configs = self.get(config_key)
         if raw_configs is None:
-            raise Exception(
-                "Expecting key '{}' in release configuration"
-                .format(config_key)
-            )
+            if default is not None:
+                return default
+            else:
+                raise Exception(
+                    "Expecting key '{}' in release configuration"
+                    .format(config_key)
+                )
         elif isinstance(raw_configs, list):
             if unique:
                 if len(raw_configs) != 1:
@@ -247,13 +292,49 @@ class ReleaseProvider(dict):
             )
 
 
-class Config(object):
+class EasyUpgrade(object):
     @classmethod
     def from_yaml(cls, path):
+        return EasyUpgrade(cls.load_yaml(path))
+
+    @classmethod
+    def load_yaml(cls, path):
         from yaml import load
-        try:
-            from yaml import CLoader as Loader
-        except ImportError:
-            from yaml import Loader
         with open(path) as istr:
-            return load(istr, Loader=Loader)
+            return load(istr)
+
+    def get_packages_version(self):
+        for provider in self.providers.values():
+            for release in provider.releases.values():
+                yield {
+                    'provider': provider.name,
+                    'release': release.name,
+                    'versions': release.get_versions()
+                }
+
+    def get_outdated_packages(self):
+        for pkg in self.get_packages_version():
+            versions = pkg['versions']
+            outdated = False
+            installed = versions.get('installed')
+            if 'candidate' in versions:
+                if installed:
+                    if installed['tuple'] < versions['candidate']['tuple']:
+                        outdated = True
+                else:
+                    outdated = True
+            if outdated:
+                yield pkg
+
+    def __init__(self, config):
+        self.config = config
+        self.providers = {}
+        _actions = 'easy_upgrade.actions'
+        _providers = 'easy_upgrade.providers'
+        for entrypoint in pkg_resources.iter_entry_points(group=_actions):
+            entrypoint.load()
+        for entrypoint in pkg_resources.iter_entry_points(group=_providers):
+            provider = entrypoint.load()
+            name = entrypoint.name
+            if name in config:
+                self.providers[name] = provider(config)
