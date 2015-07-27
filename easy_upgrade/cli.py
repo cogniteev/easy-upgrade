@@ -8,10 +8,10 @@ from . api import EasyUpgrade
 DEFAULT_CONFIG_PATH = osp.expanduser('~/.config/easy_upgrade/config.yml')
 
 
-def list_outdated_packages(config, all=False, **kwargs):
+def list_outdated_packages(config, all_packages=False, **kwargs):
     eu = EasyUpgrade.from_yaml(config)
     method = eu.get_outdated_packages
-    if all:
+    if all_packages:
         method = eu.get_packages_version
     for pkg in method():
         if 'candidate' not in pkg['versions']:
