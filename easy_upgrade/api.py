@@ -337,4 +337,4 @@ class EasyUpgrade(object):
             provider = entrypoint.load()
             name = entrypoint.name
             if name in config:
-                self.providers[name] = provider(config)
+                self.providers[name] = provider(name, config)

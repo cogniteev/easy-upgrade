@@ -66,8 +66,8 @@ class GitHubRelease(Release):
 
 
 class GitHubProvider(ReleaseProvider):
-    def __init__(self, top_config, release_cls=GitHubRelease):
-        super(GitHubProvider, self).__init__('github', top_config, release_cls)
+    def __init__(self, name, top_config, release_cls=GitHubRelease):
+        super(GitHubProvider, self).__init__(name, top_config, release_cls)
         self.basic_auth = self.get('basic-auth')
         if self.basic_auth:
             self.basic_auth = tuple(self.basic_auth.split(':', 1))
