@@ -1,6 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
+
 def get_version(version_tuple):
     if not isinstance(version_tuple[-1], int):
         return '.'.join(map(str, version_tuple[:-1])) + version_tuple[-1]
