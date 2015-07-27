@@ -1,5 +1,4 @@
 import os
-import sys
 from setuptools import setup, find_packages
 
 def get_version(version_tuple):
@@ -29,7 +28,7 @@ CLASSIFIERS = [
 ]
 
 setup(
-    name='easy_upgrade',
+    name='easy-upgrade',
     version=VERSION,
     author='Tristan Carel',
     author_email='tristan@{nospam}cogniteev.com',
@@ -39,6 +38,7 @@ setup(
     download_url='https://github.com/cogniteev/easy_upgrade/tarball/master',
     license='Apache license version 2.0',
     include_package_data=True,
+    packages=find_packages(),
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     platforms=['any'],
