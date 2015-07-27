@@ -5,7 +5,7 @@ install:
 - travis_retry pip install -r requirements-dev.txt
 - travis_retry pip install tox>=2.1.1 coveralls
 script:
-  - tox -e "$TRAVIS_PYTHON_VERSION"
+  - tox -e $(echo py$TRAVIS_PYTHON_VERSION | tr -d . )
 after_success: coveralls --verbose
 branches:
   only:
