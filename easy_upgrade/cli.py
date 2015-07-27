@@ -79,6 +79,7 @@ def run(args=None):
     )
     list_parser.add_argument(
         '-a', '--all',
+        dest='all_packages',
         action='store_true',
         help='List all packages'
     )
