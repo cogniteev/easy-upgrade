@@ -1,0 +1,21 @@
+language: python
+python:
+- '2.7'
+install:
+- travis_retry pip install -r requirements-dev.txt
+- travis_retry pip install coveralls
+script:
+  - tox -e ""$TRAVIS_PYTHON_VERSION"
+after_success: coveralls --verbose
+branches:
+  only:
+  - master
+  - /^v.*$/
+deploy:
+  provider: pypi
+  user: tcarel
+  password:
+    secure: KjaxWn13qxVGq8ka2LmFu3mdRyOjDR23KcdUNgPf8GJGQQI3RHHVaTXrpWASxQkV6DFYS0Xabcg9jhprMEKwdUJllHn92ecVaEadnTvgoM56pcgTvo8BpH1nJ9MX9i09V3xOUJuFZyGmh1fBkDYPKIxpwUsqryvu/SWxLMI8rt7P+z6X1HsucWs8y6aSw3a/iOtEzGZqDnSu3s/5zFyh6IgC2Rj1Zs/QQUWoFo8C2GLVk4qlLIDXoedB5q7zVWbbNOZuoGWeTOByCyp8Bx8XM9vdqG8qWVbVyIilE85ExWAU5W7cFz2bDqiqufW1pBax96FFD2dQ3TXfiy/xQdHgkc29trC2YxE8Qc52L2HhAU9jY2fDCxC8VSReMxdUFxze61EdEECon9a2t/GsZyW5oSD5iJp4V5SZbRi3Tl2ztVmO/Emb4vxuUIVdsLkNI5Jzf+A7W8vvNJyfkPPyV33CcsdSjD7U9Rke/uPg4Zz3MYYs7BDWiGcrGzNmxBtf2IZHMNwJ7lhuzgdY2y+oXa1/BtA+36DHeXs+fzT8nVL8L0d/18HjqTDgISZL8L9bBPXBRaOkyVLmxF/Uq4i4rygI8nOJ70TTUpkNKGUvl4zGB4982eyvdS3uztanJ2Sf7NDEWKjpO6kO8BVoLpKJWefGkC1IMbZ/RbkfF7j+NxuEZvM=
+  on:
+    tags: true
+    branch: master
