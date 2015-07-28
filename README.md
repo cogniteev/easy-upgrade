@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/cogniteev/easy-upgrade.svg)](https://travis-ci.org/cogniteev/easy-upgrade)
 [![Coverage Status](https://coveralls.io/repos/cogniteev/easy-upgrade/badge.svg?branch=master&service=github)](https://coveralls.io/github/cogniteev/easy-upgrade?branch=master)
+[![Code Climate](https://codeclimate.com/github/cogniteev/easy-upgrade/badges/gpa.svg)](https://codeclimate.com/github/cogniteev/easy-upgrade)
 [![Code Health](https://landscape.io/github/cogniteev/easy-upgrade/master/landscape.svg?style=plastic)](https://landscape.io/github/cogniteev/easy-upgrade/master)
 
 a Python utility to keep your workstation up to date.
