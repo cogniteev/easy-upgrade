@@ -3,7 +3,10 @@ import os.path as osp
 import tempfile
 import unittest
 
+import requests
+
 from easy_upgrade.toolbox import (
+    download_http_url,
     find_executable,
     pushd,
     temp_dir,
@@ -37,3 +40,22 @@ class ToolboxTest(unittest.TestCase):
         with temp_dir(cleanup=False) as d:
             self.assertTrue(osp.isdir(d))
         self.assertTrue(osp.isdir(d))
+
+    def test_file_download(self):
+        url = 'http://ovh.net/files/md5sum.txt'
+        session = requests.Session()
+        with temp_dir() as d:
+            file_path, content_type = download_http_url(
+                url,
+                session,
+                d,
+                filename='foo.txt')
+            self.assertIsNotNone(file_path)
+            self.assertEqual(osp.abspath(file_path), file_path)
+            self.assertIsNotNone(content_type)
+            self.assertEquals(content_type, 'text/plain')
+            self.assertTrue(osp.isfile(file_path))
+
+
+if __name__ == '__main__':
+    unittest.main()
