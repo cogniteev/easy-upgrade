@@ -102,9 +102,6 @@ class Action(dict):
                     base, name, provider)
             )
 
-    def __call__(self, config, release, provider, prev_result=None):
-        raise NotImplementedError()
-
     @classmethod
     def register(cls, base_name, action_cls, name, providers):
         if name in cls.actions.get(base_name, {}):
