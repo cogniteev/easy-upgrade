@@ -49,6 +49,7 @@ setup(
     install_requires=[
         'PyYAML>=3.11',
         'requests>=2.7.0',
+        'pip>=7.1.0',
     ],
     tests_require=[
     ],

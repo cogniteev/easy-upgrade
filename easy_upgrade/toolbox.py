@@ -1,9 +1,29 @@
 
+from collections import namedtuple
 from contextlib import contextmanager
 import os
 import os.path as osp
 import shutil
 import tempfile
+from urlparse import urlparse
+
+from pip.download import _download_http_url
+
+
+def download_http_url(url, session, temp_dir, **kwargs):
+    Link = namedtuple(
+        'Link',
+        ('url', 'show_url', 'filename', 'hash',
+            'hash_name', 'netloc', 'url_without_fragment')
+    )
+    kwargs.setdefault('hash', None)
+    kwargs.setdefault('hash_name', None)
+    kwargs.setdefault('filename', None)
+    kwargs.setdefault('show_url', False)
+    kwargs.setdefault('netloc', urlparse(url).netloc)
+    kwargs.setdefault('url_without_fragment', url)
+    link = Link(url=url, **kwargs)
+    return _download_http_url(link, session, temp_dir)
 
 
 @contextmanager

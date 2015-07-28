@@ -3,6 +3,7 @@ from datetime import datetime
 import logging
 import os
 import os.path as osp
+import shutil
 import stat
 
 import requests
@@ -11,6 +12,10 @@ from .. api import (
     Fetcher,
     Release,
     ReleaseProvider,
+)
+from .. toolbox import (
+    download_http_url,
+    temp_dir,
 )
 
 GITHUB_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S%Z'
@@ -103,21 +108,21 @@ class GitHubAsset(Fetcher):
             raise Exception("Didn't find asset matching requirements")
 
     def download_asset(self, asset, output_directory):
-        url = asset['browser_download_url']
+        session = requests.Session()
+        session.auth = self.provider.basic_auth
         output_file = osp.join(output_directory, self['file'])
-        dir_path = osp.dirname(output_file)
-        if not osp.isdir(dir_path):
-            os.makedirs(dir_path)
-        response = requests.get(
-            url,
-            auth=self.provider.basic_auth,
-            stream=True
-        )
-        response.raise_for_status()
-        with open(output_file, 'wb') as ostr:
-            for block in response.iter_content(1024):
-                ostr.write(block)
-        if asset['content_type'] in ['application/octet-stream']:
+        with temp_dir(cleanup=False) as download_dir:
+            file_path, content_type = download_http_url(
+                asset['browser_download_url'],
+                session,
+                download_dir,
+                filename=self['file']
+            )
+            dir_path = osp.dirname(output_file)
+            if not osp.isdir(dir_path):
+                os.makedirs(dir_path)
+            shutil.move(file_path, output_file)
+        if content_type in ['application/octet-stream']:
             st = os.stat(output_file)
             os.chmod(
                 output_file, st.st_mode |
