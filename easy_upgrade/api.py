@@ -210,8 +210,7 @@ class Release(dict):
                 post_installer.execute(d, candidate_str)
         return True
 
-    def __extract_action(self, config_key, base_action_cls,
-                         unique=True, default=None):
+    def __get_raw_config(self, config_key, default, unique):
         raw_configs = self.get(config_key)
         if raw_configs is None:
             if default is not None:
@@ -230,7 +229,19 @@ class Release(dict):
                     )
         else:
             raw_configs = [raw_configs]
+        return raw_configs
 
+    def __instantiate_action(self, base_action_cls, name, config):
+        action_cls = Action.get_action(
+            base_action_cls,
+            name,
+            self.provider
+        )
+        return action_cls(self.provider, self, config)
+
+    def __extract_action(self, config_key, base_action_cls,
+                         unique=True, default=None):
+        raw_configs = self.__get_raw_config(config_key, default, unique)
         actions = []
         for config in raw_configs:
             if not isinstance(config, dict):
@@ -244,14 +255,9 @@ class Release(dict):
                     "expect a dictionary values of 1 element (name => config)"
                 )
             action_name, action_config = config.items()[0]
-            action_cls = Action.get_action(
+            actions.append(self.__instantiate_action(
                 base_action_cls,
                 action_name,
-                self.provider
-            )
-            actions.append(action_cls(
-                self.provider,
-                self,
                 action_config
             ))
         if unique:
