@@ -172,32 +172,37 @@ class Release(dict):
             }
         return versions
 
-    def install(self):
-        version_str = self.installer.installed_version()
-        if version_str:
-            version = parse_version(version_str)
-        else:
-            version = None
-        candidate_str = self.fetcher.candidate_version()
-        if candidate_str is None:
-            return False
-        candidate = parse_version(candidate_str)
+    def __version(self, version):
         if version:
-            if version == candidate:
+            version_tuple = parse_version(version)
+        else:
+            version_tuple = None
+        return version, version_tuple
+
+    def __is_bidder_newer(self, installed, bidder, bidder_str):
+        if installed:
+            if installed == bidder:
                 self.logger.info(
-                    "candidate version ({}) ".format(candidate_str) +
+                    "candidate version ({}) ".format(bidder_str) +
                     "is already installed. Nothing to do."
                 )
                 return False
-            elif version > candidate:
+            elif installed > bidder:
                 self.logger.info(
-                    "installer version ({}) ".format(version) +
-                    "is most recent than " +
-                    "candidate version ({})".format(candidate)
+                    "installed version ({}) ".format(installed) +
+                    "is more recent than " +
+                    "candidate version ({})".format(bidder_str)
                 )
                 return False
+        return True
+
+    def install(self):
+        _, version = self.__version(self.installer.installed_version())
+        bidder_str, bidder = self.__version(self.fetcher.candidate_version())
+        if not self.__is_bidder_newer(version, bidder, bidder_str):
+            return False
         self.logger.info("starting installation of version {}".format(
-            candidate_str
+            bidder_str
         ))
         top_config = self.provider.top_config
         cleanup_temp_dir = top_config.get('cleanup-temp-dir', True)
@@ -205,9 +210,9 @@ class Release(dict):
             self.logger.info("fetching release")
             self.fetcher.fetch(d)
             self.logger.info("installing release")
-            self.installer.install(d, candidate_str)
+            self.installer.install(d, bidder_str)
             for post_installer in self.post_installers:
-                post_installer.execute(d, candidate_str)
+                post_installer.execute(d, bidder_str)
         return True
 
     def __get_raw_config(self, config_key, default, unique):
