@@ -1,5 +1,6 @@
 
 import argparse
+from importlib import import_module
 import logging
 import os.path as osp
 
@@ -8,8 +9,31 @@ from . api import EasyUpgrade
 DEFAULT_CONFIG_PATH = osp.expanduser('~/.config/easy_upgrade/config.yml')
 
 
+def load_extra_provider(name, module, clazz):
+    module = import_module(module)
+    return {'name': getattr(module, clazz)}
+
+
+def load_extra_actions(module):
+    import_module(module)
+
+
+def load_extra_library(**kwargs):
+    extra_providers_str = kwargs.get('add_release_provider', '')
+    extra_providers = {}
+    for provider in extra_providers_str.split(','):
+        if any(provider):
+            provider = provider.split(':', 2)
+        extra_providers.update(load_extra_provider(*provider))
+    extra_actions_str = kwargs.get('add_release', '')
+    for actions_module in extra_actions_str.split(','):
+        if any(actions_module):
+            load_extra_actions(actions_module)
+    return extra_providers
+
+
 def list_outdated_packages(config, all_packages=False, **kwargs):
-    eu = EasyUpgrade.from_yaml(config)
+    eu = EasyUpgrade.from_yaml(config, extra_providers=load_extra_library(**kwargs))
     method = eu.get_outdated_packages
     if all_packages:
         method = eu.get_packages_version
@@ -34,7 +58,7 @@ def list_outdated_packages(config, all_packages=False, **kwargs):
 
 
 def install_outdated_packages(config, release=None, **kwargs):
-    eu = EasyUpgrade.from_yaml(config)
+    eu = EasyUpgrade.from_yaml(config, extra_providers=load_extra_library(**kwargs))
     if len(release) == 0:
         for provider in eu.providers.values():
             provider.install()
@@ -71,6 +95,16 @@ def run(args=None):
         metavar='<file>',
         help='Specify custom configuration file. Default is %(default)s',
         default=DEFAULT_CONFIG_PATH
+    )
+    parser.add_argument(
+        '--add-release-provider',
+        default='',
+        help=argparse.SUPPRESS
+    )
+    parser.add_argument(
+        '--add-release',
+        default='',
+        help=argparse.SUPPRESS
     )
     subparsers = parser.add_subparsers(help='sub-command help')
     list_parser = subparsers.add_parser(

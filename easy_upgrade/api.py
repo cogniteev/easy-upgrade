@@ -302,8 +302,8 @@ class ReleaseProvider(dict):
 
 class EasyUpgrade(object):
     @classmethod
-    def from_yaml(cls, path):
-        return EasyUpgrade(cls.load_yaml(path))
+    def from_yaml(cls, path, **kwargs):
+        return EasyUpgrade(cls.load_yaml(path), **kwargs)
 
     @classmethod
     def load_yaml(cls, path):
@@ -334,9 +334,12 @@ class EasyUpgrade(object):
             if outdated:
                 yield pkg
 
-    def __init__(self, config):
+    def __init__(self, config, extra_providers=None, **kwargs):
         self.config = config
         self.providers = {}
+        extra_providers = extra_providers or {}
+        for name, clazz in extra_providers.items():
+            self.providers[name] = clazz(name, config)
         _actions = 'easy_upgrade.actions'
         _providers = 'easy_upgrade.providers'
         for entrypoint in pkg_resources.iter_entry_points(group=_actions):
