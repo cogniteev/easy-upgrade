@@ -12,6 +12,7 @@ github:
           activate: false
     docker/machine:
       with-prerelease: true
+      name: v0.3.*
       fetch:
         asset:
           name: docker-machine_darwin-amd64

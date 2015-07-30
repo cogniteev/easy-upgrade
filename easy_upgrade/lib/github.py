@@ -1,5 +1,6 @@
 
 from datetime import datetime
+from fnmatch import fnmatch
 import logging
 import os
 import os.path as osp
@@ -34,6 +35,7 @@ class GitHubRelease(Release):
         super(GitHubRelease, self).__init__(provider, name, config)
         self.with_prerelease = self.get('with-prerelease', False)
         self.with_draft = self.get('with-draft', False)
+        self.name_filter = config.get('name')
 
     @property
     def pkg_name(self):
@@ -55,9 +57,12 @@ class GitHubRelease(Release):
 
         releases = self.get_releases()
         for release in releases:
+            name = release['name']
             if not self.with_prerelease and release['prerelease']:
                 continue
             elif not self.with_draft and release['draft']:
+                continue
+            elif self.name_filter and not fnmatch(name, self.name_filter):
                 continue
             elif release_date is None:
                 release_date = parse_date(release['published_at'])

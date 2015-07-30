@@ -32,9 +32,9 @@ class GithubTest(unittest.TestCase):
                 'provider': 'github',
                 'versions': {
                     'candidate': {
-                        'human': u'v0.4.0-rc1',
+                        'human': u'v0.3.1',
                         'tuple': (
-                            u'00000000', u'00000004', '*c',
+                            u'00000000', u'00000003',
                             u'00000001', '*final'
                         )
                     }
