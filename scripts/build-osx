@@ -1,0 +1,11 @@
+#!/bin/sh -ev
+
+#rm -rf dist-venv
+#rm -rf dist/easy_upgrade
+#virtualenv -p /usr/local/bin/python dist-venv
+. dist-venv/bin/activate
+#dist-venv/bin/pip install -r requirements-dev.txt
+#dist-venv/bin/pip install .
+dist-venv/bin/pyinstaller easy_upgrade-mine.spec
+mv dist/easy_upgrade dist/easy_upgrade-Darwin-x86_64
+dist/easy_upgrade-Darwin-x86_64 --version
